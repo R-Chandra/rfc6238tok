@@ -1,0 +1,198 @@
+#!/usr/bin/python3
+
+import sys
+import time
+import fileinput
+import hmac
+import base64
+import struct
+import hashlib
+
+
+from tkinter import *
+from tkinter import ttk
+
+
+
+def retn_sel_str(sel_offset, sel_len):
+  """
+
+for completeness, this handles when the program gets asked for part of
+the selection.  Empirically, usually it's starting at 0 for 4000
+chars, but you never know.
+
+"""
+
+  global tok
+
+  currtxt = tok['text']
+  beg = int(sel_offset)
+  retlen = int(sel_len)
+  # print("want to return starting at ", beg, " and for ", retlen, " chars.")
+  return currtxt[beg:retlen]
+
+
+
+
+def copy_handler():
+  """
+copy_handler - handles pressing the copy button
+
+When the user clicks the copy button, sets the clipboard to the current
+token (tok) text and causes the selectionn to be owned
+
+"""
+
+  global root
+  global tok
+
+  root.clipboard_clear()
+  root.clipboard_append(tok["text"])
+  root.selection_own()
+
+
+def calc_tok(totpkey):
+  """ calculate the RFC6238 hash of totpkey """
+
+  tnow = round(time.time())
+  tseqno = int(tnow) // 30
+  tseqno = struct.pack('>Q', tseqno)
+
+  rawhash = hmac.new(totpkey, tseqno, hashlib.sha1)
+  hashstr = rawhash.hexdigest()
+  variantpicker = hashstr[39]
+  variant = int(variantpicker, 16)
+  startpos = variant << 1
+  endpos = startpos + 8
+  hashtokstr = hashstr[startpos:endpos]
+  tokenval = int(hashtokstr, 16) & 0x7fffffff
+  tokenval %= 10 ** 6
+  tokenstr = str(tokenval)
+  while len(tokenstr) < 6:
+    tokenstr = '0' + tokenstr
+
+  return tokenstr
+
+
+def upd(keyval):
+  """
+upd - update everything in our window
+
+This appropriately shortens or brings to full size the
+ countDownTimer progress bar, updates the TOTP (tok) as
+ necessary, and schedules ourselves to be rerun when done
+ using after()
+
+"""
+
+  global countDownTimer
+  global tok
+  global horizMagic
+
+  tnow = time.time()
+
+  timerval = 31 - round(tnow) % 30
+  # had some weird edge cases where the val was stuck for an
+  # extra 30 sec if updating only at timer at 0. Four updates
+  # out of 30 possible isn't bad, but would be nice to nail
+  # down the timing error
+  if ( timerval >= 29 ) or ( timerval <= 1 ) :
+    tok['text'] = calc_tok(keyval)
+
+  if timerval < 6:
+    countDownTimer['style'] = 'red.'+horizMagic
+  elif timerval < 11:
+    countDownTimer['style'] = 'yel.'+horizMagic
+  else:
+    countDownTimer['style'] = 'grn.'+horizMagic
+
+  timerval -= 1
+  countDownTimer["value"] = timerval
+  if timerval <= 0:
+    countDownTimer["value"] = 30
+    # root.destroy()
+
+  # find number of ms until next second to resched ourselves
+  n = 1000 - round(( tnow % 1 ) * 1000)
+  # print('ms to top of sec: '+str(n))
+  if n < 50:
+    n = 1000
+
+  # sys.stdout.write("{:}\n".format(n))
+  root.after(n, upd, keyval)
+
+# print('length of arg list: ',len(sys.argv))
+if len(sys.argv) > 1 :
+  widgetLabel = sys.argv[1]
+else:
+  widgetLabel = 'auth tok gen'
+
+
+# lin = sys.stdin.readline()
+lin = input('base32 seed: ')
+print('')
+
+# handle the original JAuth's "secret=...." for the key spec
+# print("original: >"+lin+"<")
+if ( lin[0:7] == 'secret=' ):
+  lin = lin[7:len(lin)]
+# print("possibly trimmed: >"+lin+"<")
+
+seed = base64.b32decode(lin.upper())
+
+# print('seed is ', seed)
+
+root = Tk()
+
+
+root.selection_handle(retn_sel_str)
+
+countDownTimer = ttk.Progressbar(root,
+                                 orient='horizontal',
+                                 length=150,
+                                 mode='determinate')
+countDownTimer["maximum"] = 30
+# a new TOTP is valid every 30 secs at the top and bottom of each minute
+countDownTimer["value"] = 30 - (time.time() % 30) // 1 + 1
+
+# styles are a tad weird. "Horizontal.TProgressbar" is a magic string
+# for horizontal ttk progress bars. I mostly don't understand it, and
+# just mimic some fine Stack Exchange folks
+
+horizMagic = 'Horizontal.TProgressbar'
+
+styleObj = ttk.Style()
+styleObj.configure('grn.'+horizMagic, background='green')
+styleObj.configure('yel.'+horizMagic, background='yellow')
+styleObj.configure('red.'+horizMagic, background='red')
+
+tokenFor = Label(root, text=widgetLabel, font=("Courier New",12))
+
+Iam = sys.argv[0]
+lastSlash = Iam.rindex('/')
+# hadwave no slash being in argv[0]
+Iam = Iam[lastSlash:len(Iam)]
+
+wintitle = widgetLabel + ' - ' +  Iam
+
+root.title(wintitle)
+
+tok = Label(root,
+            text=lin,
+            bg='black',
+            fg='#00C000',
+            font=("Courier New",20)
+)
+
+cp = Button(root, command=copy_handler, text="copy")
+
+tokenFor.grid(row=1,columnspan=2)
+tok.grid(row=2,column=0)
+cp.grid(row=2,column=1)
+countDownTimer.grid(row=3,columnspan=2)
+
+
+tok['text'] = calc_tok(seed)
+upd(seed)
+root.mainloop()
+
