@@ -32,7 +32,12 @@ chars, but you never know.
   return currtxt[beg:retlen]
 
 
+def lostsel():
 
+  global tokenFor
+  
+  print('selection was LOST')
+  tokenFor['background'] = 'yellow'
 
 def copy_handler():
   """
@@ -45,10 +50,13 @@ token (tok) text and causes the selectionn to be owned
 
   global root
   global tok
+  global tokenFor
 
   root.clipboard_clear()
   root.clipboard_append(tok["text"])
-  root.selection_own()
+  tokenFor['background'] = 'green'
+  # root['background'] = 'green'
+  root.selection_own(command=lostsel)
 
 
 def calc_tok(totpkey):
@@ -138,30 +146,23 @@ if ( lin[0:7] == 'secret=' ):
   lin = lin[7:len(lin)]
 # print("possibly trimmed: >"+lin+"<")
 
-lin=tinupper()
+lin = lin.upper()
+
+# one incompatibility found is that one base32 string I received
+# was not properly padded, at least according to base64.b32decode()
+# So what I found will fix that is adding some "=" padding. Apparently,
+# the string length has to be a multiple of 8
 
 linlen = len(lin)
+pad_needed = linlen % 8
+if pad_needed:
+  lin += '=' * pad_needed
 
-seed=0
-sys.stdout.write('bbefore loop')
-exit(0)
-for i in range(1,5):
-  print('try number ', i)
-  try:
-    seed = base64.b32decode(lin.upper())
-    break
-  except :
-    print('retrying')
-    lin += '='
-    pass
-
-if seed == 0:
-  exit(1)
+seed = base64.b32decode(lin)
 
 # print('seed is ', seed)
 
 root = Tk()
-
 
 root.selection_handle(retn_sel_str)
 
