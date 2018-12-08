@@ -36,7 +36,7 @@ def lostsel():
 
   global tokenFor
   
-  print('selection was LOST')
+  # print('selection was LOST')
   tokenFor['background'] = 'yellow'
 
 def copy_handler():
