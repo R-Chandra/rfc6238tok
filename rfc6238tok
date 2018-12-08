@@ -138,7 +138,25 @@ if ( lin[0:7] == 'secret=' ):
   lin = lin[7:len(lin)]
 # print("possibly trimmed: >"+lin+"<")
 
-seed = base64.b32decode(lin.upper())
+lin=tinupper()
+
+linlen = len(lin)
+
+seed=0
+sys.stdout.write('bbefore loop')
+exit(0)
+for i in range(1,5):
+  print('try number ', i)
+  try:
+    seed = base64.b32decode(lin.upper())
+    break
+  except :
+    print('retrying')
+    lin += '='
+    pass
+
+if seed == 0:
+  exit(1)
 
 # print('seed is ', seed)
 
