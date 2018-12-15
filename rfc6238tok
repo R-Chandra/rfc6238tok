@@ -190,7 +190,7 @@ tokenFor = Label(root, text=widgetLabel, font=("Courier New",12))
 Iam = sys.argv[0]
 lastSlash = Iam.rindex('/')
 # hadwave no slash being in argv[0]
-Iam = Iam[lastSlash:len(Iam)]
+Iam = Iam[lastSlash + 1:len(Iam)]
 
 wintitle = widgetLabel + ' - ' +  Iam
 
