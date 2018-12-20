@@ -19,4 +19,4 @@ Here is an example of usage:
 
     gpg2 --decrypt < ~/.config/mfaseeds/google.seed.gpg | rfc6238tok Google
 
-In my environment, gpg2 will automatically invoke gpg-agent and put up a graphical prompt for the file's encryption passphrase.
+In my environment, gpg2 will automatically invoke gpg-agent and put up a graphical prompt for the encryption key's passphrase for the file.  It may be overkill, but I personally prefer feeding the encrypted file in on the stdin as you see here, instead of giving an argument to GPG so that GPG has no knowledge of the pathname, and therefore cannot alter it in any way.  At most, the access time (atime) may be updated for google.seed.gpg by virtue of the shell opening it for reading.
