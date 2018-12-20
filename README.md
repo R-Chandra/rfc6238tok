@@ -13,6 +13,8 @@ After passing your secret in, a Tk window will be opened.  Whatever argument you
 
 As a visual indicator, when "copy" is clicked, the background of label above the code turns green.  If some other program takes away ownership of the selection, that background turns yellow.
 
+A few words about the clipboard and the selection:  When you click on "copy", the current 6 digit token replaces the contents of the clipboard and we take ownership of the selection.  If the current token expires, and a new one is generated, provided nothing else has manipulated the clipboard, it will still have the expired token in it, but if you then paste the selection (for example, in most system configurations, by pressing the middle mouse button), whatever the current token is gets pasted.  So it matters what paste method you use, clipboard or selection.  Some systems (MS Windows?) might not make a distinction between clipboard and selection, so you'll have to use the copy button.
+
 Here is an example of usage:
 
     gpg2 --decrypt < ~/.config/mfaseeds/google.seed.gpg | rfc6238tok Google
